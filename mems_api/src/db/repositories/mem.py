@@ -12,7 +12,6 @@ from src.db.postgresdatabase import (
 )
 from src.db.entities.mem import Mem
 from src.db.repositories.base import (
-    CountRepositoryMixin,
     NameFieldRepositoryMixin,
     PostgresRepository,
 )
@@ -25,7 +24,6 @@ class MemRepository(
         RequestMemUpdate,
     ],
     NameFieldRepositoryMixin,
-    CountRepositoryMixin,
 ):
     pass
 

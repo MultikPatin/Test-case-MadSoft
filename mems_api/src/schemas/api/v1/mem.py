@@ -10,22 +10,22 @@ from src.utils.pagination import PaginatedMixin
 class RequestMemUpdate(BaseModel):
     description: str = Field(
         description="Описание мема",
-        example="Супер смешной!)",
+        examples=["Супер смешной!)"],
         min_length=1,
         max_length=255,
     )
 
 
-class RequestMemCreate(RequestMemUpdate):
+class RequestMemCreate(BaseModel):
     description: str | None = Field(
         description="Описание мема",
-        example="Супер смешной!)",
+        examples=["Супер смешной!)"],
         min_length=1,
         max_length=255,
     )
     name: str = Field(
         description="Наименование мема",
-        example="Язь",
+        examples=["Язь"],
         min_length=1,
         max_length=64,
     )
@@ -34,7 +34,7 @@ class RequestMemCreate(RequestMemUpdate):
 class MemBase(RequestMemUpdate, UUIDMixin, TimeMixin):
     name: str = Field(
         description="Наименование мема",
-        example="Язь",
+        examples=["Язь"],
         min_length=1,
         max_length=64,
     )

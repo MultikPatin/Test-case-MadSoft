@@ -14,7 +14,8 @@ uvicorn = "^0.29.0"
 gunicorn = "^21.2.0"
 alembic = "^1.13.1"
 redis = "^5.0.6"
-sqlalchemy = "^2.0.30"
+sqlalchemy = {extras = ["mypy"], version = "^2.0.30"}
+
 
 [tool.poetry.group.dev]
 optional = true
