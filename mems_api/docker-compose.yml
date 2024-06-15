@@ -1,0 +1,303 @@
+name: practix-analytics
+services:
+
+  elk_elasticsearch:
+    image: elasticsearch:${ELASTIC_VERSION}
+    container_name: ${ELK_ELASTIC_HOST}
+    restart: always
+    environment:
+      - xpack.security.enabled=false
+      - "discovery.type=single-node"
+      - ES_JAVA_OPTS=${ELK_ELASTIC_ES_JAVA_OPTS}
+      - ELASTIC_HOST=${ELK_ELASTIC_HOST}
+      - ELASTIC_PORT=${ELK_ELASTIC_PORT}
+    volumes:
+      - elk_elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: curl -s http://${ELK_ELASTIC_HOST}:${ELK_ELASTIC_PORT} >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 50
+      start_period: 10s
+    ports:
+      - ${ELK_ELASTIC_PORT_LOCAL}:${ELK_ELASTIC_PORT}
+
+  elk_kibana:
+    image: kibana:${KIBANA_VERSION}
+    environment:
+      - ELASTICSEARCH_HOSTS=http://${ELK_ELASTIC_HOST}:${ELK_ELASTIC_PORT}
+    depends_on:
+      elk_elasticsearch:
+        condition: service_healthy
+    ports:
+      - ${ELK_KIBANA_PORT_LOCAL}:${ELK_KIBANA_PORT}
+
+  logstash:
+    image: logstash:${LOGSTASH_VERSION}
+    container_name: ${LOGSTASH_HOST}
+    depends_on:
+      elk_elasticsearch:
+        condition: service_healthy
+    environment:
+      XPACK_MONITORING_ENABLED: "false"
+      ES_HOST: ${ELK_ELASTIC_HOST}:${ELK_ELASTIC_PORT}
+    ports:
+      - "${LOGSTASH_PORT}:${LOGSTASH_PORT}/udp"
+    volumes:
+      - ./deploy/logstash.conf:/config/logstash.conf:ro
+    command: logstash -f /config/logstash.conf
+
+  ugc:
+    container_name: movies-ugc
+    image: movies-ugc:latest
+    env_file:
+      - ./ugc/.env
+    environment:
+      - KAFKA_HOST=${KAFKA_BROKER_NAME_0}
+      - KAFKA_PORT=${KAFKA_INTERNAL_PORT}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - LOGSTASH_HOST=${LOGSTASH_HOST}
+      - LOGSTASH_PORT=${LOGSTASH_PORT}
+    build:
+      context: ./ugc/
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      kafka-init:
+        condition: service_started
+    networks:
+      - kafka_network
+
+  etl_analytics_events:
+    container_name: etl_analytics_events
+    image: etl_analytics:latest
+    build:
+      context: ./etl_analytics/
+      dockerfile: Dockerfile
+    env_file:
+      - ./etl_analytics/.env
+    environment:
+      - KAFKA_HOST=${KAFKA_BROKER_NAME_0}
+      - KAFKA_PORT=${KAFKA_INTERNAL_PORT}
+      - KAFKA_TOPIC=${KAFKA_TOPIC_NAME_1}
+      - CLICKHOUSE_HOST=${CLICKHOUSE_HOST}
+      - CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+      - SENTRY_DSN=${SENTRY_DSN}
+    depends_on:
+      kafka-init:
+        condition: service_started
+    networks:
+      - kafka_network
+
+  etl_analytics_favorites:
+    container_name: etl_analytics_favorites
+    image: etl_analytics:latest
+    build:
+      context: ./etl_analytics/
+      dockerfile: Dockerfile
+    env_file:
+      - ./etl_analytics/.env
+    environment:
+      - KAFKA_HOST=${KAFKA_BROKER_NAME_0}
+      - KAFKA_PORT=${KAFKA_INTERNAL_PORT}
+      - KAFKA_TOPIC=${KAFKA_TOPIC_NAME_2}
+      - CLICKHOUSE_HOST=${CLICKHOUSE_HOST}
+      - CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+      - SENTRY_DSN=${SENTRY_DSN}
+    depends_on:
+      kafka-init:
+        condition: service_started
+    networks:
+      - kafka_network
+
+  etl_analytics_grades:
+    container_name: etl_analytics_grades
+    image: etl_analytics:latest
+    build:
+      context: ./etl_analytics/
+      dockerfile: Dockerfile
+    env_file:
+      - ./etl_analytics/.env
+    environment:
+      - KAFKA_HOST=${KAFKA_BROKER_NAME_0}
+      - KAFKA_PORT=${KAFKA_INTERNAL_PORT}
+      - KAFKA_TOPIC=${KAFKA_TOPIC_NAME_3}
+      - CLICKHOUSE_HOST=${CLICKHOUSE_HOST}
+      - CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+      - SENTRY_DSN=${SENTRY_DSN}
+    depends_on:
+      kafka-init:
+        condition: service_started
+    networks:
+      - kafka_network
+
+  etl_analytics_reviews:
+    container_name: etl_analytics_reviews
+    image: etl_analytics:latest
+    build:
+      context: ./etl_analytics/
+      dockerfile: Dockerfile
+    env_file:
+      - ./etl_analytics/.env
+    environment:
+      - KAFKA_HOST=${KAFKA_BROKER_NAME_0}
+      - KAFKA_PORT=${KAFKA_INTERNAL_PORT}
+      - KAFKA_TOPIC=${KAFKA_TOPIC_NAME_4}
+      - CLICKHOUSE_HOST=${CLICKHOUSE_HOST}
+      - CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+      - SENTRY_DSN=${SENTRY_DSN}
+    depends_on:
+      kafka-init:
+        condition: service_started
+    networks:
+      - kafka_network
+
+  kafka-0:
+    image: bitnami/kafka:${KAFKA_VERSION}
+    container_name: ${KAFKA_BROKER_NAME_0}
+    ports:
+      - ${KAFKA_BROKER_0_EXTERNAL_PORT}:${KAFKA_BROKER_0_EXTERNAL_PORT}
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@${KAFKA_BROKER_NAME_0}:${KAFKA_CONTROLLER_PORT},1@${KAFKA_BROKER_NAME_1}:${KAFKA_CONTROLLER_PORT},2@${KAFKA_BROKER_NAME_2}:${KAFKA_CONTROLLER_PORT}
+      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_KRAFT_CLUSTER_ID}
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:${KAFKA_INTERNAL_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT},EXTERNAL://:${KAFKA_BROKER_0_EXTERNAL_PORT}
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://${KAFKA_BROKER_NAME_0}:${KAFKA_INTERNAL_PORT},EXTERNAL://127.0.0.1:${KAFKA_BROKER_0_EXTERNAL_PORT}
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    volumes:
+      - kafka_0_data:/bitnami/kafka
+    healthcheck:
+      test: kafka-topics.sh --bootstrap-server localhost:${KAFKA_BROKER_0_EXTERNAL_PORT} --list
+      interval: 1s
+      timeout: 60s
+      retries: 60
+    networks:
+      - kafka_network
+
+  kafka-1:
+    image: bitnami/kafka:${KAFKA_VERSION}
+    container_name: ${KAFKA_BROKER_NAME_1}
+    ports:
+      - ${KAFKA_BROKER_1_EXTERNAL_PORT}:${KAFKA_BROKER_1_EXTERNAL_PORT}
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@${KAFKA_BROKER_NAME_0}:${KAFKA_CONTROLLER_PORT},1@${KAFKA_BROKER_NAME_1}:${KAFKA_CONTROLLER_PORT},2@${KAFKA_BROKER_NAME_2}:${KAFKA_CONTROLLER_PORT}
+      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_KRAFT_CLUSTER_ID}
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:${KAFKA_INTERNAL_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT},EXTERNAL://:${KAFKA_BROKER_1_EXTERNAL_PORT}
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://${KAFKA_BROKER_NAME_1}:${KAFKA_INTERNAL_PORT},EXTERNAL://127.0.0.1:${KAFKA_BROKER_1_EXTERNAL_PORT}
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    volumes:
+      - kafka_1_data:/bitnami/kafka
+    networks:
+      - kafka_network
+
+  kafka-2:
+    image: bitnami/kafka:${KAFKA_VERSION}
+    container_name: ${KAFKA_BROKER_NAME_2}
+    ports:
+      - ${KAFKA_BROKER_2_EXTERNAL_PORT}:${KAFKA_BROKER_2_EXTERNAL_PORT}
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@${KAFKA_BROKER_NAME_0}:${KAFKA_CONTROLLER_PORT},1@${KAFKA_BROKER_NAME_1}:${KAFKA_CONTROLLER_PORT},2@${KAFKA_BROKER_NAME_2}:${KAFKA_CONTROLLER_PORT}
+      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_KRAFT_CLUSTER_ID}
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:${KAFKA_INTERNAL_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT},EXTERNAL://:${KAFKA_BROKER_2_EXTERNAL_PORT}
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://${KAFKA_BROKER_NAME_2}:${KAFKA_INTERNAL_PORT},EXTERNAL://127.0.0.1:${KAFKA_BROKER_2_EXTERNAL_PORT}
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    volumes:
+      - kafka_2_data:/bitnami/kafka
+    networks:
+      - kafka_network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.0
+    ports:
+      - ${KAFKA_UI_EXTERNAL_PORT}:${KAFKA_UI_EXTERNAL_PORT}
+    environment:
+      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka-0:${KAFKA_INTERNAL_PORT}
+      - KAFKA_CLUSTERS_0_NAME=kraft
+    networks:
+      - kafka_network
+
+  kafka-init:
+    image: bitnami/kafka:${KAFKA_VERSION}
+    depends_on:
+      kafka-0:
+        condition: service_healthy
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      echo -e blocks until kafka is reachable
+      kafka-topics.sh --bootstrap-server ${KAFKA_BROKER_NAME_0}:${KAFKA_INTERNAL_PORT} --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics.sh --bootstrap-server ${KAFKA_BROKER_NAME_0}:${KAFKA_INTERNAL_PORT} --create --if-not-exists --topic ${KAFKA_TOPIC_NAME_1} --replication-factor ${KAFKA_TOPIC_1_REPLICATION_FACTOR} --partitions ${KAFKA_TOPIC_1_PARTITIONS} --config retention.ms=${KAFKA_TOPIC_1_RETENTIONS_MS}
+      kafka-topics.sh --bootstrap-server ${KAFKA_BROKER_NAME_0}:${KAFKA_INTERNAL_PORT} --create --if-not-exists --topic ${KAFKA_TOPIC_NAME_2} --replication-factor ${KAFKA_TOPIC_2_REPLICATION_FACTOR} --partitions ${KAFKA_TOPIC_2_PARTITIONS} --config retention.ms=${KAFKA_TOPIC_2_RETENTIONS_MS}
+      kafka-topics.sh --bootstrap-server ${KAFKA_BROKER_NAME_0}:${KAFKA_INTERNAL_PORT} --create --if-not-exists --topic ${KAFKA_TOPIC_NAME_3} --replication-factor ${KAFKA_TOPIC_3_REPLICATION_FACTOR} --partitions ${KAFKA_TOPIC_3_PARTITIONS} --config retention.ms=${KAFKA_TOPIC_3_RETENTIONS_MS}
+      kafka-topics.sh --bootstrap-server ${KAFKA_BROKER_NAME_0}:${KAFKA_INTERNAL_PORT} --create --if-not-exists --topic ${KAFKA_TOPIC_NAME_4} --replication-factor ${KAFKA_TOPIC_4_REPLICATION_FACTOR} --partitions ${KAFKA_TOPIC_4_PARTITIONS} --config retention.ms=${KAFKA_TOPIC_4_RETENTIONS_MS}
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics.sh --bootstrap-server ${KAFKA_BROKER_NAME_0}:${KAFKA_INTERNAL_PORT} --list
+      "
+    networks:
+      - kafka_network
+
+  nginx:
+    image: nginx:${NGINX_VERSION}
+    container_name: gateway
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/configs:/etc/nginx/conf.d:ro
+      - ./tmp/logs/nginx/:/var/log/nginx/
+      - static:/staticfiles/
+    restart: unless-stopped
+    depends_on:
+      logstash:
+        condition: service_started
+      ugc:
+        condition: service_started
+    ports:
+      - "443:443"
+      - "80:80"
+    networks:
+      - kafka_network
+
+  filebeat:
+    build:
+      context: filebeat
+    container_name: filebeat
+    volumes:
+      - ./deploy/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./tmp/logs/nginx:/var/log/nginx:ro
+    depends_on:
+      nginx:
+        condition: service_started
+    links:
+      - logstash
+
+volumes:
+  kafka_0_data:
+  kafka_1_data:
+  kafka_2_data:
+  elk_elasticsearch_data:
+  static:
+
+networks:
+  kafka_network:
+    driver: bridge
