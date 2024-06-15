@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 
 from src.configs.postgres import PostgresSettings
-from src.db.entities import Entity
+from src.db.entities import Entity  # type: ignore
 
 settings: PostgresSettings = PostgresSettings()
 

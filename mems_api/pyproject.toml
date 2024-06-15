@@ -13,8 +13,8 @@ fastapi-limiter = "^0.1.6"
 uvicorn = "^0.29.0"
 gunicorn = "^21.2.0"
 alembic = "^1.13.1"
-sqlalchemy = {version = "2.0.29", extras = ["asyncio"]}
 redis = "^5.0.6"
+sqlalchemy = "^2.0.30"
 
 [tool.poetry.group.dev]
 optional = true
@@ -92,7 +92,8 @@ docstring-code-line-length = 60
 [tool.mypy]
 python_version = "3.11"
 plugins = [
-  "pydantic.mypy",
+    "pydantic.mypy",
+    "sqlalchemy.ext.mypy.plugin",
 ]
 follow_imports = "silent"
 warn_redundant_casts = true

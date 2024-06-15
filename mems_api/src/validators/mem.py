@@ -1,22 +1,21 @@
 from typing import Annotated
 from uuid import UUID
-
 from fastapi import Depends, Path
-
-from src.validators.base import BaseValidator, DuplicateNameValidatorMixin
-from src.db.entities.mem import Mem
+from functools import lru_cache
 from src.db.repositories.mem import (
     MemRepository,
     get_mem_repository,
 )
+from src.validators.base import BaseValidator, DuplicateNameValidatorMixin
 
 
 class MemValidator(
-    BaseValidator[MemRepository, Mem], DuplicateNameValidatorMixin
+    BaseValidator[MemRepository], DuplicateNameValidatorMixin[MemRepository]
 ):
     pass
 
 
+@lru_cache
 def get_mem_validator(
     repository: MemRepository = Depends(get_mem_repository),
 ) -> MemValidator:

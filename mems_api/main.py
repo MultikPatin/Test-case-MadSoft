@@ -31,7 +31,7 @@ app = FastAPI(
 app.include_router(
     mem.router,
     prefix="/api/v1/mem",
-    tags=["users"],
+    tags=["mems"],
 )
 
 if __name__ == "__main__":

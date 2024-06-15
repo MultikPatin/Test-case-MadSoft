@@ -1,39 +1,28 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar
+from typing import TypeVar, Sequence, Any
 from uuid import UUID
+from src.db.entities.base import Entity
 
-DB = TypeVar("DB")
-M = TypeVar("M")
+M = TypeVar("M", bound=Entity)
 
 
-class AbstractRepositoryCD(ABC):
-    _database: DB
-    _model: M
-
+class AbstractRepository(ABC):
     @abstractmethod
-    async def create(self, instance: M) -> M:
-        pass
-
-    @abstractmethod
-    async def remove(self, instance: M) -> None:
-        pass
-
-
-class AbstractRepositoryCRD(AbstractRepositoryCD, ABC):
-    @abstractmethod
-    async def get_all(self) -> list[M] | None:
+    async def get_all(self) -> Sequence[Any]:
         pass
 
     @abstractmethod
     async def get(self, instance_id: UUID) -> M | None:
         pass
 
-
-class AbstractRepository(AbstractRepositoryCRD, ABC):
     @abstractmethod
-    async def update(self, instance_id: UUID, instance: M) -> M:
+    async def create(self, instance) -> M:
         pass
 
     @abstractmethod
-    async def count(self) -> int:
+    async def update(self, instance_id: UUID, instance) -> M | None:
+        pass
+
+    @abstractmethod
+    async def remove(self, instance_id: UUID) -> UUID:
         pass
