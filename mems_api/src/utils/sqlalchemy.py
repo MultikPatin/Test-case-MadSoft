@@ -8,7 +8,7 @@ class SQLAlchemyConnectMixin(ServiceSettings):
     database: str
     user: str
     password: SecretStr
-    sqlalchemy_echo: bool = Field("True", alias="AUTH_SQLALCHEMY_ECHO") == "True"
+    sqlalchemy_echo: bool = Field("True", alias="SQLALCHEMY_ECHO") == "True"
 
     @property
     def postgres_connection_url(self) -> URL:
