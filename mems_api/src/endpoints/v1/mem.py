@@ -53,7 +53,7 @@ async def get_mems(
                 updated_at=result.updated_at,
                 name=result.name,
                 description=result.description,
-                image=result.image,
+                image_url=result.image_url,
             )
             for result in paginated_data.results
         ],
@@ -91,7 +91,7 @@ async def get_mem(
         updated_at=mem.updated_at,
         name=mem.name,
         description=mem.description,
-        image=mem.image,
+        image_url=mem.image_url,
     )
 
 
@@ -107,6 +107,7 @@ async def create_mem(
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
 ) -> ResponseMem:
+    # TODO загрузка файла, проверка размера, проверка разрешения
     """
     Create a new mem.
 
@@ -127,7 +128,7 @@ async def create_mem(
         updated_at=mem.updated_at,
         name=mem.name,
         description=mem.description,
-        image=mem.image,
+        image_url=mem.image_url,
     )
 
 
@@ -144,6 +145,7 @@ async def update_mem(
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
 ) -> ResponseMem:
+    # TODO загрузка файла, проверка размера, проверка разрешения
     """
     Update a mem by its uuid.
 
@@ -164,7 +166,7 @@ async def update_mem(
         updated_at=mem.updated_at,
         name=mem.name,
         description=mem.description,
-        image=mem.image,
+        image_url=mem.image_url,
     )
 
 

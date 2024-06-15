@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, FileUrl
+from pydantic import BaseModel, Field
 
 from src.schemas.api.base import (
     TimeMixin,
@@ -38,7 +38,12 @@ class MemBase(RequestMemUpdate, UUIDMixin, TimeMixin):
         min_length=1,
         max_length=64,
     )
-    image: FileUrl
+    image_url: str = Field(
+        description="URL картинки",
+        examples=["https://image.png"],
+        min_length=1,
+        max_length=64,
+    )
 
 
 class ResponseMem(MemBase, UUIDMixin, TimeMixin):

@@ -1,4 +1,10 @@
-export PYTHONPATH=$SRC_PATH
-poetry run alembic upgrade head
-cd "$APP_DIR" || exit
-rm Dockerfile
+#!/usr/bin/env bash
+
+export PYTHONPATH=/opt
+echo "Waiting Postgres start"
+while ! nc -z "${POSTGRES_HOST}" "${POSTGRES_PORT}"; do
+  sleep 1
+done
+echo "Postgres started"
+
+alembic upgrade head

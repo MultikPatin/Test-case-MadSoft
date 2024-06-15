@@ -8,14 +8,31 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 pydantic-settings = "^2.2.1"
-fastapi = "^0.110.0"
-fastapi-limiter = "^0.1.6"
-uvicorn = "^0.29.0"
-gunicorn = "^21.2.0"
-alembic = "^1.13.1"
-redis = "^5.0.6"
+fastapi = {version = "^0.110.0", optional = true}
+fastapi-limiter = {version = "^0.1.6", optional = true}
+uvicorn = {version = "^0.29.0", optional = true}
+gunicorn = {version = "^21.2.0", optional = true}
+alembic = {version = "^1.13.1", optional = true}
+redis = {version = "^5.0.6", optional = true}
 sqlalchemy = {extras = ["mypy"], version = "^2.0.30"}
+asyncpg = {version = "^0.29.0", optional = true}
 
+[tool.poetry.extras]
+api = [
+    "redis",
+    "fastapi",
+    "sqlalchemy",
+    "gunicorn",
+    "uvicorn",
+    "asyncpg",
+    "fastapi-limiter",
+]
+migrations = [
+    "sqlalchemy",
+    "alembic",
+    "asyncpg",
+    "werkzeug",
+]
 
 [tool.poetry.group.dev]
 optional = true
