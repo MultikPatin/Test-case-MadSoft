@@ -9,26 +9,26 @@ from src.db.postgresdatabase import PostgresDatabase
 from src.db.entities.base import Entity
 from src.db.repositories.abstract import AbstractRepository
 
-M = TypeVar("M", bound=Entity)
-C = TypeVar("C", bound=BaseModel)
-U = TypeVar("U", bound=BaseModel)
+ModelType = TypeVar("ModelType", bound=Entity)
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
 class InitRepository:
     _database: PostgresDatabase
-    _model: M
+    _model: ModelType
 
-    def __init__(self, database: PostgresDatabase, model: type[M]):
+    def __init__(self, database: PostgresDatabase, model: type[ModelType]):
         self._database = database
         self._model = model
 
 
 class PostgresRepository(
     InitRepository,
-    Generic[M, C, U],
+    Generic[ModelType, CreateSchemaType, UpdateSchemaType],
     AbstractRepository,
 ):
-    async def create(self, instance: C) -> M:
+    async def create(self, instance: CreateSchemaType) -> ModelType:
         async with self._database.get_session() as session:
             db_obj = self._model(**instance.dict())
             session.add(db_obj)
@@ -41,14 +41,16 @@ class PostgresRepository(
             db_objs: Any = await session.execute(select(self._model))
             return db_objs.scalars().all()
 
-    async def get(self, instance_uuid: UUID) -> M | None:
+    async def get(self, instance_uuid: UUID) -> ModelType | None:
         async with self._database.get_session() as session:
             db_obj: Any = await session.execute(
                 select(self._model).filter_by(uuid=instance_uuid)
             )
             return db_obj.scalars().first()
 
-    async def update(self, instance_uuid: UUID, instance: U) -> M | None:
+    async def update(
+        self, instance_uuid: UUID, instance: UpdateSchemaType
+    ) -> ModelType | None:
         async with self._database.get_session() as session:
             db_obj: M | None = await self.get(instance_uuid)
 
@@ -69,9 +71,16 @@ class PostgresRepository(
             await session.commit()
             return instance_uuid
 
+    async def count(self) -> int | None:
+        async with self._database.get_session() as session:
+            db_obj = await session.execute(
+                select(func.count()).select_from(self._model)
+            )
+            return db_obj.scalars().first()
+
 
 class NameFieldRepositoryMixin(InitRepository):
-    async def get_by_name(self, name: str) -> M | None:
+    async def get_by_name(self, name: str) -> ModelType | None:
         async with self._database.get_session() as session:
             db_obj: Any = await session.execute(
                 select(self._model).filter_by(name=name)

@@ -27,6 +27,16 @@ async def get_mems(
     mem_service: MemService = Depends(get_mem_service),
     paginator: Paginator = Depends(get_paginator),
 ) -> ResponseMemPaginated:
+    """
+    Get a paginated list of all mems.
+
+    Args:
+    - **page_number** (str): The number of the page to get
+    - **page_size** (str): The size of the page to get
+
+    Returns:
+    - **ResponseMemPaginated**: A paginated list of all mems.
+    """
     paginated_data = await paginator(
         mem_service,
         "get_all",
@@ -60,10 +70,29 @@ async def get_mem(
     mem_uuid: mem_uuid_annotation,
     mem_service: MemService = Depends(get_mem_service),
 ) -> ResponseMem:
+    """
+    Get a single mem details by its uuid.
+
+    Args:
+    - **mem_uuid** (str): The uuid of the mem to get.
+
+    Returns:
+    - **ResponseMem**: A single mem details
+
+    Raises:
+    - **HTTPException**: If the mem with the given uuid does not exist.
+    """
     mem = await mem_service.get(mem_uuid)
     if not mem:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="mem not found")
-    return mem
+    return ResponseMem(
+        uuid=mem.uuid,
+        created_at=mem.created_at,
+        updated_at=mem.updated_at,
+        name=mem.name,
+        description=mem.description,
+        image=mem.image,
+    )
 
 
 @router.post(
@@ -78,9 +107,28 @@ async def create_mem(
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
 ) -> ResponseMem:
+    """
+    Create a new mem.
+
+    Args:
+    - **body** (RequestMemCreate): A scheme containing the details of the new mem.
+
+    Returns:
+    - **ResponseMem**: A scheme containing the details of the newly created mem.
+
+    Raises:
+    - **ValueError**: If the provided name for the new mem already exists.
+    """
     await mem_validator.is_duplicate_name(body.name)
     mem = await mem_service.create(body)
-    return mem
+    return ResponseMem(
+        uuid=mem.uuid,
+        created_at=mem.created_at,
+        updated_at=mem.updated_at,
+        name=mem.name,
+        description=mem.description,
+        image=mem.image,
+    )
 
 
 @router.patch(
@@ -96,8 +144,28 @@ async def update_mem(
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
 ) -> ResponseMem:
+    """
+    Update a mem by its uuid.
+
+    Args:
+    - **mem_uuid** (str): The uuid of the mem to update.
+    - **body** (RequestMemUpdate): A scheme containing the details of the updated mem.
+
+    Returns:
+    - **ResponseMem**: A scheme containing the details of the updated mem.
+
+    Raises:
+    - **HTTPException**: If the mem with the given uuid does not exist.
+    """
     mem = await mem_service.update(await mem_validator.is_exists(mem_uuid), body)
-    return mem
+    return ResponseMem(
+        uuid=mem.uuid,
+        created_at=mem.created_at,
+        updated_at=mem.updated_at,
+        name=mem.name,
+        description=mem.description,
+        image=mem.image,
+    )
 
 
 @router.delete(
@@ -110,5 +178,17 @@ async def remove_mem(
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
 ) -> StringRepresent:
+    """
+    Delete a mem by its uuid.
+
+    Args:
+    - **mem_uuid** (str): The uuid of the mem to delete.
+
+    Returns:
+    - **StringRepresent**: A string representation of the HTTP response.
+
+    Raises:
+    - **HTTPException**: If the mem with the given uuid does not exist.
+    """
     await mem_service.remove(await mem_validator.is_exists(mem_uuid))
     return StringRepresent(code=HTTPStatus.OK, details="Mem deleted successfully")
