@@ -95,3 +95,4 @@ dmypy.json
 .idea/
 
 docs/
+/static/

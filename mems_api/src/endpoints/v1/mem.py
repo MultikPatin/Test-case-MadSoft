@@ -10,8 +10,14 @@ from src.schemas.api.v1.mem import (
     ResponseMemPaginated,
     RequestMemCreate,
 )
+from src.services.imsge_saver import ImageSaver, get_image_sever_service
 from src.utils.pagination import Paginator, get_paginator
 from src.services.mem import MemService, get_mem_service
+from src.validators.image import (
+    is_valid_image_size,
+    image_annotation,
+    is_valid_image_type,
+)
 
 from src.validators.mem import mem_uuid_annotation, MemValidator, get_mem_validator
 
@@ -196,3 +202,18 @@ async def remove_mem(
     """
     await mem_service.remove(await mem_validator.is_exists(mem_uuid))
     return StringRepresent(code=HTTPStatus.OK, details="Mem deleted successfully")
+
+
+@router.post(
+    "/image/",
+    response_model=StringRepresent,
+    summary="Upload a image for a mem",
+)
+async def load_mem_image(
+    image: image_annotation,
+    image_sever_service: ImageSaver = Depends(get_image_sever_service),
+):
+    await is_valid_image_type(image)
+    await is_valid_image_size(image)
+    saved_file_path = await image_sever_service.save(image)
+    return StringRepresent(code=HTTPStatus.OK, details=saved_file_path)
