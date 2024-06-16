@@ -19,8 +19,8 @@ class ServiceSettings(EnvSettings):
     port: int = 0
     host_local: str = ""
     port_local: int = 0
-    local: bool = Field(..., alias="LOCAL") == "True"
-    debug: bool = Field(..., alias="DEBUG") == "True"
+    local: bool = Field("True", alias="LOCAL")  # type: ignore
+    debug: bool = Field("True", alias="DEBUG")  # type: ignore
 
     def correct_host(self) -> str:
         if self.local:
@@ -31,4 +31,3 @@ class ServiceSettings(EnvSettings):
         if self.local:
             return self.port_local
         return self.port
-
