@@ -5,14 +5,13 @@ from fastapi_limiter.depends import RateLimiter
 
 from src.schemas.api.base import StringRepresent
 from src.schemas.api.v1.mem import (
-    RequestMemCreate,
     RequestMemUpdate,
     ResponseMem,
     ResponseMemPaginated,
+    RequestMemCreate,
 )
 from src.utils.pagination import Paginator, get_paginator
 from src.services.mem import MemService, get_mem_service
-from src.validators.image import image_annotation, validate_image_size
 
 from src.validators.mem import mem_uuid_annotation, MemValidator, get_mem_validator
 
@@ -101,16 +100,15 @@ async def get_mem(
     response_model=ResponseMem,
     response_model_exclude_none=True,
     summary="Create a mem",
-    # dependencies=[Depends(RateLimiter(times=5, seconds=1))],
+    dependencies=[Depends(RateLimiter(times=5, seconds=1))],
 )
 async def create_mem(
-    image: image_annotation,
     body: RequestMemCreate,
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
 ):
     # ) -> ResponseMem:
-    # TODO загрузка файла, проверка размера, проверка разрешения
+    # TODO реализовать механизм загрузки файла в S3 по переданному имени
     """
     Create a new mem.
 
@@ -123,10 +121,6 @@ async def create_mem(
     Raises:
     - **ValueError**: If the provided name for the new mem already exists.
     """
-    await validate_image_size(image)
-    filename = image.filename
-    content_type = image.content_type
-    print(filename, content_type)
     await mem_validator.is_duplicate_name(body.name)
     mem = await mem_service.create(body)
     return ResponseMem(
@@ -152,7 +146,7 @@ async def update_mem(
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
 ) -> ResponseMem:
-    # TODO загрузка файла, проверка размера, проверка разрешения
+    # TODO реализовать механизм загрузки файла в S3 по переданному имени
     """
     Update a mem by its uuid.
 
@@ -187,6 +181,7 @@ async def remove_mem(
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
 ) -> StringRepresent:
+    # TODO реализовать механизм удаления файла в S3
     """
     Delete a mem by its uuid.
 

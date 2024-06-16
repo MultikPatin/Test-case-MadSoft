@@ -6,7 +6,7 @@ from src.configs.s3_saver import S3Saver
 from src.configs.sentry import SentrySettings
 from src.configs.redis import RedisSettings
 from src.configs.logger import LOGGING
-from src.utils.settings import ServiceSettings
+from src.utils.settings import ServiceSettings, EnvSettings
 
 logging_config.dictConfig(LOGGING)
 
@@ -20,8 +20,14 @@ class AppSettings(ServiceSettings):
     openapi_url: str = Field(..., alias="API_OPENAPI_URL")
 
 
+class StaticSettings(EnvSettings):
+    main_dir: str = Field(..., alias="STATIC_MAIN_DIR")
+    mem_images_dir: str = Field(..., alias="STATIC_MEM_IMAGES_DIR")
+
+
 class Settings(BaseSettings):
     app: AppSettings = AppSettings()
+    static: StaticSettings = StaticSettings()
     redis: RedisSettings = RedisSettings()
     postgres: PostgresSettings = PostgresSettings()
     s3_sever: S3Saver = S3Saver()

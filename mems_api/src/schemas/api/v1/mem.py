@@ -8,7 +8,11 @@ from src.utils.pagination import PaginatedMixin
 
 
 class RequestMemUpdate(BaseModel):
-    description: str = Field(
+    image_name: str = Field(
+        description="Имя загруженной картинки",
+        examples=["exemple.jpg"],
+    )
+    description: str | None = Field(
         description="Описание мема",
         examples=["Супер смешной!)"],
         min_length=1,
@@ -16,7 +20,7 @@ class RequestMemUpdate(BaseModel):
     )
 
 
-class RequestMemCreate(BaseModel):
+class RequestMemCreate(RequestMemUpdate):
     description: str | None = Field(
         description="Описание мема",
         examples=["Супер смешной!)"],
@@ -31,7 +35,13 @@ class RequestMemCreate(BaseModel):
     )
 
 
-class MemBase(RequestMemUpdate, UUIDMixin, TimeMixin):
+class MemBase(UUIDMixin, TimeMixin):
+    description: str | None = Field(
+        description="Описание мема",
+        examples=["Супер смешной!)"],
+        min_length=1,
+        max_length=255,
+    )
     name: str = Field(
         description="Наименование мема",
         examples=["Язь"],
