@@ -12,12 +12,12 @@ logging_config.dictConfig(LOGGING)
 
 
 class AppSettings(ServiceSettings):
-    name: str = Field(..., alias="APP_NAME")
-    description: str = Field(..., alias="APP_DESCRIPTION")
-    host: str = Field(..., alias="APP_HOST")
-    port: int = Field(..., alias="APP_PORT")
-    docs_url: str = Field(..., alias="APP_DOCS_URL")
-    openapi_url: str = Field(..., alias="APP_OPENAPI_URL")
+    name: str = Field(..., alias="API_NAME")
+    description: str = Field(..., alias="API_DESCRIPTION")
+    host: str = Field(..., alias="API_HOST")
+    port: int = Field(..., alias="API_PORT")
+    docs_url: str = Field(..., alias="API_DOCS_URL")
+    openapi_url: str = Field(..., alias="API_OPENAPI_URL")
 
 
 class Settings(BaseSettings):

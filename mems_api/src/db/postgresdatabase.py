@@ -2,13 +2,14 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
 
-from src.configs.postgres import PostgresSettings
+from src.configs.postgres import PostgresSettings, get_postgres_settings
 
 logger = logging.getLogger(__name__)
 logger.level = logging.DEBUG
@@ -39,6 +40,6 @@ class PostgresDatabase:
 
 
 def get_postgres_auth_db(
-    settings: PostgresSettings = PostgresSettings(),
+    settings: PostgresSettings = Depends(get_postgres_settings),
 ) -> PostgresDatabase:
     return PostgresDatabase(settings)

@@ -40,9 +40,11 @@ COPY ./alembic.ini ./alembic.ini
 COPY ./src/configs/__init__.py ./src/configs/__init__.py
 COPY ./src/configs/postgres.py ./src/configs/postgres.py
 COPY ./src/db/entities ./src/db/entities
+COPY ./src/utils/__init__.py ./src/utils/__init__.py
+COPY ./src/utils/settings.py ./src/utils/settings.py
+COPY ./src/utils/sqlalchemy.py ./src/utils/sqlalchemy.py
 
+RUN sed -i 's/\r$//g'  ./migrations/entrypoint.sh && \
+    chmod +x  ./migrations/entrypoint.sh
 
-RUN sed -i 's/\r$//g'  ./entrypoint.sh && \
-    chmod +x  ./entrypoint.sh
-
-ENTRYPOINT ["sh", "entrypoint.sh"]
+ENTRYPOINT ["sh", "migrations/entrypoint.sh"]

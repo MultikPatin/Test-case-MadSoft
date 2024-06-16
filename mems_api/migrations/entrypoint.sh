@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-export PYTHONPATH=/opt
 echo "Waiting Postgres start"
 while ! nc -z "${POSTGRES_HOST}" "${POSTGRES_PORT}"; do
   sleep 1

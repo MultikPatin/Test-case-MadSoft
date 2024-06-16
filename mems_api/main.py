@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi_limiter import FastAPILimiter
 from redis.asyncio import Redis
 
-from src.configs.app import settings
+from src.configs.config import settings
 from src.configs.logger import LOGGING
 from src.endpoints.v1 import mem
 
@@ -25,6 +25,7 @@ app = FastAPI(
     description=settings.app.description,
     docs_url=settings.app.docs_url,
     openapi_url=settings.app.openapi_url,
+    redoc_url=None,
     lifespan=lifespan,
 )
 

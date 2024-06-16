@@ -6,7 +6,7 @@ from src.utils.sqlalchemy import SQLAlchemyConnectMixin
 
 class PostgresSettings(SQLAlchemyConnectMixin):
     """
-    This class is used to store the Postgres auth db connection settings.
+    This class is used to store the Postgres db connection settings.
     """
 
     database: str = Field(..., alias="POSTGRES_DB")
@@ -16,3 +16,7 @@ class PostgresSettings(SQLAlchemyConnectMixin):
     port: int = Field(..., alias="POSTGRES_PORT")
     host_local: str = Field(..., alias="POSTGRES_HOST_LOCAL")
     port_local: int = Field(..., alias="POSTGRES_PORT_LOCAL")
+
+
+def get_postgres_settings() -> PostgresSettings:
+    return PostgresSettings()
