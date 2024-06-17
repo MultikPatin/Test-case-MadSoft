@@ -1,3 +1,4 @@
+import os
 from logging import config as logging_config
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -10,6 +11,8 @@ from src.utils.settings import ServiceSettings, EnvSettings
 
 logging_config.dictConfig(LOGGING)
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 class AppSettings(ServiceSettings):
     name: str = Field(..., alias="API_NAME")
@@ -18,6 +21,7 @@ class AppSettings(ServiceSettings):
     port: int = Field(..., alias="API_PORT")
     docs_url: str = Field(..., alias="API_DOCS_URL")
     openapi_url: str = Field(..., alias="API_OPENAPI_URL")
+    base_dir: str = BASE_DIR
 
 
 class StaticSettings(EnvSettings):

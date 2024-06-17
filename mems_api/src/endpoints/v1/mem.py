@@ -9,9 +9,17 @@ from src.schemas.api.v1.mem import (
     ResponseMem,
     ResponseMemPaginated,
     RequestMemCreate,
+    MemCreate,
+    MemUpdate,
 )
+from src.services.imsge_saver import ImageSaver, get_image_saver_service
 from src.utils.pagination import Paginator, get_paginator
 from src.services.mem import MemService, get_mem_service
+from src.validators.image import (
+    is_valid_image_size,
+    image_annotation,
+    is_valid_image_type,
+)
 
 from src.validators.mem import mem_uuid_annotation, MemValidator, get_mem_validator
 
@@ -106,9 +114,7 @@ async def create_mem(
     body: RequestMemCreate,
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
-):
-    # ) -> ResponseMem:
-    # TODO реализовать механизм загрузки файла в S3 по переданному имени
+) -> ResponseMem:
     """
     Create a new mem.
 
@@ -122,7 +128,13 @@ async def create_mem(
     - **ValueError**: If the provided name for the new mem already exists.
     """
     await mem_validator.is_duplicate_name(body.name)
-    mem = await mem_service.create(body)
+    instance = MemCreate(
+        name=body.name,
+        description=body.description,
+        image_url=body.image_url,
+        image_key=None,
+    )
+    mem = await mem_service.create(instance)
     return ResponseMem(
         uuid=mem.uuid,
         created_at=mem.created_at,
@@ -146,7 +158,6 @@ async def update_mem(
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
 ) -> ResponseMem:
-    # TODO реализовать механизм загрузки файла в S3 по переданному имени
     """
     Update a mem by its uuid.
 
@@ -160,7 +171,10 @@ async def update_mem(
     Raises:
     - **HTTPException**: If the mem with the given uuid does not exist.
     """
-    mem = await mem_service.update(await mem_validator.is_exists(mem_uuid), body)
+    instance = MemUpdate(
+        description=body.description, image_url=body.image_url, image_key=None
+    )
+    mem = await mem_service.update(await mem_validator.is_exists(mem_uuid), instance)
     return ResponseMem(
         uuid=mem.uuid,
         created_at=mem.created_at,
@@ -181,7 +195,6 @@ async def remove_mem(
     mem_service: MemService = Depends(get_mem_service),
     mem_validator: MemValidator = Depends(get_mem_validator),
 ) -> StringRepresent:
-    # TODO реализовать механизм удаления файла в S3
     """
     Delete a mem by its uuid.
 
@@ -196,3 +209,18 @@ async def remove_mem(
     """
     await mem_service.remove(await mem_validator.is_exists(mem_uuid))
     return StringRepresent(code=HTTPStatus.OK, details="Mem deleted successfully")
+
+
+@router.post(
+    "/image/",
+    response_model=StringRepresent,
+    summary="Upload a image for a mem",
+)
+async def load_mem_image(
+    image: image_annotation,
+    image_sever_service: ImageSaver = Depends(get_image_saver_service),
+):
+    await is_valid_image_type(image)
+    await is_valid_image_size(image)
+    saved_file_path = await image_sever_service.save_to_disc(image)
+    return StringRepresent(code=HTTPStatus.OK, details=saved_file_path)

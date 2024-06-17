@@ -3,14 +3,15 @@ from pydantic import BaseModel, Field
 from src.schemas.api.base import (
     TimeMixin,
     UUIDMixin,
+    ImageMixin,
 )
 from src.utils.pagination import PaginatedMixin
 
 
 class RequestMemUpdate(BaseModel):
-    image_name: str = Field(
-        description="Имя загруженной картинки",
-        examples=["exemple.jpg"],
+    image_url: str = Field(
+        description="Путь до загруженной картинки",
+        examples=["static/exemple.jpg"],
     )
     description: str | None = Field(
         description="Описание мема",
@@ -18,6 +19,10 @@ class RequestMemUpdate(BaseModel):
         min_length=1,
         max_length=255,
     )
+
+
+class MemUpdate(RequestMemUpdate, ImageMixin):
+    pass
 
 
 class RequestMemCreate(RequestMemUpdate):
@@ -33,6 +38,10 @@ class RequestMemCreate(RequestMemUpdate):
         min_length=1,
         max_length=64,
     )
+
+
+class MemCreate(RequestMemCreate, ImageMixin):
+    pass
 
 
 class MemBase(UUIDMixin, TimeMixin):

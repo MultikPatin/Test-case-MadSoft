@@ -92,3 +92,4 @@ dmypy.json
 
 # JetBrains
 .idea/
+!/static/
