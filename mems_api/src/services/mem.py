@@ -5,8 +5,8 @@ from uuid import UUID
 from fastapi import Depends
 
 from src.schemas.api.v1.mem import (
-    RequestMemCreate,
-    RequestMemUpdate,
+    MemCreate,
+    MemUpdate,
     ResponseMemPaginated,
 )
 from src.schemas.db.mem import MemDB
@@ -22,8 +22,8 @@ class MemService(
     BaseService[
         MemDB,
         ResponseMemPaginated,
-        RequestMemCreate,
-        RequestMemUpdate,
+        MemCreate,
+        MemUpdate,
     ]
 ):
     def __init__(
@@ -35,23 +35,27 @@ class MemService(
         super().__init__(repository, model)
         self._image_sever_service = image_sever_service
 
-    async def create(self, instance: RequestMemCreate) -> MemDB:
-        instance.image_url = await self._image_sever_service.save_to_s3(
-            instance.image_url
-        )
+    async def create(self, instance: MemCreate) -> MemDB:
+        (
+            instance.image_url,
+            instance.image_key,
+        ) = await self._image_sever_service.put_to_s3(instance.image_url)
         obj: Any = await self._repository.create(instance)
         model = self._model.model_validate(obj, from_attributes=True)  # type: ignore
         return model
 
-    async def update(self, instance_uuid: UUID, instance: RequestMemUpdate) -> MemDB:
-        instance.image_url = await self._image_sever_service.save_to_s3(
-            instance.image_url
-        )
+    async def update(self, instance_uuid: UUID, instance: MemUpdate) -> MemDB:
+        (
+            instance.image_url,
+            instance.image_key,
+        ) = await self._image_sever_service.put_to_s3(instance.image_url)
         obj: Any = await self._repository.update(instance_uuid, instance)
         model = self._model.model_validate(obj, from_attributes=True)  # type: ignore
         return model
 
     async def remove(self, instance_uuid: UUID) -> UUID:
+        odj = await self._repository.get(instance_uuid)
+        status = await self._image_sever_service.del_from_s3(odj.image_key)
         obj_uuid = await self._repository.remove(instance_uuid)
         return obj_uuid
 

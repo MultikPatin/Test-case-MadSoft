@@ -10,3 +10,4 @@ class Mem(Entity):
     name: Mapped[str] = mapped_column(String(64), unique=True)
     description: Mapped[str | None] = mapped_column(String(255))
     image_url: Mapped[str] = mapped_column(String(255))
+    image_key: Mapped[str] = mapped_column(String(255))

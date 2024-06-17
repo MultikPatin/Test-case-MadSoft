@@ -40,14 +40,29 @@ class ImageSaver:
 
         return f"{self.__file_dir_url}{file.filename}"
 
-    async def save_to_s3(self, file_url: str) -> str:
-        data = {"file_url": file_url}
+    async def put_to_s3(self, file_url: str) -> tuple[str, str]:
+        image_url = ""
+        image_key = ""
 
         async with self.__http_client as client:
-            response = await client.post(url=self.__s3_saver.url, data=data)
+            response = await client.post(
+                url=self.__s3_saver.url, data={"file_url": file_url}
+            )
 
         data = response.json()
-        return data.get("image_url")
+        if data:
+            image_url, image_key = data.get("image"), data.get("image_key")
+
+        return image_url, image_key
+
+    async def del_from_s3(self, file_key: str) -> int:
+        data = {"file_key": file_key}
+
+        async with self.__http_client as client:
+            response = await client.delete(url=self.__s3_saver.url, data=data)
+
+        status_code = response.status_code
+        return status_code
 
 
 @lru_cache

@@ -23,6 +23,12 @@ class TimeMixin(BaseModel):
     )
 
 
+class ImageMixin(BaseModel):
+    image_key: str = Field(
+        description="Ключ для картинки в S3",
+    )
+
+
 class StringRepresent(BaseModel):
     code: HTTPStatus
     details: str

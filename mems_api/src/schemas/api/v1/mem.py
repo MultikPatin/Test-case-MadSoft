@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from src.schemas.api.base import (
     TimeMixin,
     UUIDMixin,
+    ImageMixin,
 )
 from src.utils.pagination import PaginatedMixin
 
@@ -20,6 +21,10 @@ class RequestMemUpdate(BaseModel):
     )
 
 
+class MemUpdate(RequestMemUpdate, ImageMixin):
+    pass
+
+
 class RequestMemCreate(RequestMemUpdate):
     description: str | None = Field(
         description="Описание мема",
@@ -33,6 +38,10 @@ class RequestMemCreate(RequestMemUpdate):
         min_length=1,
         max_length=64,
     )
+
+
+class MemCreate(RequestMemCreate, ImageMixin):
+    pass
 
 
 class MemBase(UUIDMixin, TimeMixin):
