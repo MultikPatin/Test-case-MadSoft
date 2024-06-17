@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from typing import TypeVar, Generic
 from uuid import UUID
 
@@ -21,7 +22,9 @@ class BaseValidator(InitValidator[R], AbstractValidator):
     async def is_exists(self, instance_uuid: UUID) -> UUID:
         instance = await self._repository.get(instance_uuid)  # type: ignore
         if instance is None:
-            raise HTTPException(status_code=404, detail="The object was not found")
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail="The object was not found"
+            )
         return instance_uuid
 
 
@@ -30,6 +33,6 @@ class DuplicateNameValidatorMixin(InitValidator[R], AbstractDuplicateNameMixin):
         permission_uuid = await self._repository.get_uuid_by_name(name)  # type: ignore
         if permission_uuid is not None:
             raise HTTPException(
-                status_code=400,
+                status_code=HTTPStatus.BAD_REQUEST,
                 detail="An object with that name already exists",
             )

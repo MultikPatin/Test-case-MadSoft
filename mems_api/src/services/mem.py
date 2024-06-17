@@ -1,9 +1,11 @@
 from functools import lru_cache
+from http import HTTPStatus
 from typing import Any
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 
+from src.db.entities.mem import Mem
 from src.schemas.api.v1.mem import (
     MemCreate,
     MemUpdate,
@@ -54,9 +56,15 @@ class MemService(
         return model
 
     async def remove(self, instance_uuid: UUID) -> UUID:
-        odj = await self._repository.get(instance_uuid)
-        status = await self._image_sever_service.del_from_s3(odj.image_key)
-        obj_uuid = await self._repository.remove(instance_uuid)
+        odj: Mem = await self._repository.get(instance_uuid)
+        status_code = await self._image_sever_service.del_from_s3(odj.image_key)
+        if status_code == 200:
+            obj_uuid = await self._repository.remove(instance_uuid)
+        else:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                detail=f"error deleting a file from storage. status_code={status_code}",
+            )
         return obj_uuid
 
 

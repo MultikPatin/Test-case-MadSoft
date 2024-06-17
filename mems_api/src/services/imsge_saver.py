@@ -26,7 +26,7 @@ class ImageSaver:
         p = Path(self.__file_dir_path)
         p.mkdir(parents=True, exist_ok=True)
 
-    async def save(self, file: UploadFile) -> str:
+    async def save_to_disc(self, file: UploadFile) -> str:
         file_extension = None
         if file.content_type is not None:
             _, file_extension = file.content_type.split("/")
@@ -48,7 +48,6 @@ class ImageSaver:
             response = await client.post(
                 url=self.__s3_saver.url, data={"file_url": file_url}
             )
-
         data = response.json()
         if data:
             image_url, image_key = data.get("image"), data.get("image_key")
@@ -56,13 +55,12 @@ class ImageSaver:
         return image_url, image_key
 
     async def del_from_s3(self, file_key: str) -> int:
-        data = {"file_key": file_key}
+        url = self.__s3_saver.url + f"/{file_key}"
 
         async with self.__http_client as client:
-            response = await client.delete(url=self.__s3_saver.url, data=data)
+            response = await client.delete(url=url)
 
-        status_code = response.status_code
-        return status_code
+        return response.status_code
 
 
 @lru_cache
