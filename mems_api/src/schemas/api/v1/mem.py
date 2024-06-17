@@ -8,9 +8,9 @@ from src.utils.pagination import PaginatedMixin
 
 
 class RequestMemUpdate(BaseModel):
-    image_name: str = Field(
-        description="Имя загруженной картинки",
-        examples=["exemple.jpg"],
+    image_url: str = Field(
+        description="Путь до загруженной картинки",
+        examples=["static/exemple.jpg"],
     )
     description: str | None = Field(
         description="Описание мема",

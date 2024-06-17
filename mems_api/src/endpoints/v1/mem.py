@@ -10,7 +10,7 @@ from src.schemas.api.v1.mem import (
     ResponseMemPaginated,
     RequestMemCreate,
 )
-from src.services.imsge_saver import ImageSaver, get_image_sever_service
+from src.services.imsge_saver import ImageSaver, get_image_saver_service
 from src.utils.pagination import Paginator, get_paginator
 from src.services.mem import MemService, get_mem_service
 from src.validators.image import (
@@ -211,7 +211,7 @@ async def remove_mem(
 )
 async def load_mem_image(
     image: image_annotation,
-    image_sever_service: ImageSaver = Depends(get_image_sever_service),
+    image_sever_service: ImageSaver = Depends(get_image_saver_service),
 ):
     await is_valid_image_type(image)
     await is_valid_image_size(image)
