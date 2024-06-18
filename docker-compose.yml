@@ -28,6 +28,7 @@ services:
     container_name: ${REDIS_HOST}
     restart: always
     environment:
+      - LOCAL=False
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
     healthcheck:
@@ -46,6 +47,7 @@ services:
       context: ./mems_api/
       dockerfile: ./migrations/Dockerfile
     container_name: migrations
+    image: mems_api_migrations:latest
     environment:
       - LOCAL=False
       - DEBUG=True
@@ -63,7 +65,7 @@ services:
       - services
 
   mems_api:
-    container_name: mems_api
+    container_name: ${MEMS_API_HOST}
     image: mems_api:latest
     build:
       context: ./mems_api/
@@ -71,6 +73,10 @@ services:
     env_file:
       - ./mems_api/.env
     environment:
+      - LOCAL=False
+      - DEBUG=True
+      - API_HOST=${MEMS_API_HOST}
+      - API_PORT=${MEMS_API_PORT}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -79,6 +85,8 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - SENTRY_DSN=${SENTRY_DSN}
+      - S3_SAVER_HOST=${S3_SAVER_HOST}
+      - S3_SAVER_PORT=${S3_SAVER_PORT}
     volumes:
       - static:/static/mem_images
     depends_on:
@@ -86,6 +94,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    ports:
+      - ${MEMS_API_PORT_LOCAL}:${MEMS_API_PORT}
     networks:
       - services
 

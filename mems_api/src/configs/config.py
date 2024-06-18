@@ -17,8 +17,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 class AppSettings(ServiceSettings):
     name: str = Field(..., alias="API_NAME")
     description: str = Field(..., alias="API_DESCRIPTION")
-    host: str = Field(..., alias="API_HOST")
-    port: int = Field(..., alias="API_PORT")
+    host: str = Field("mems_api", alias="API_HOST")
+    port: int = Field(8000, alias="API_PORT")
     docs_url: str = Field(..., alias="API_DOCS_URL")
     openapi_url: str = Field(..., alias="API_OPENAPI_URL")
     base_dir: str = BASE_DIR
