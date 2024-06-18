@@ -74,7 +74,7 @@ services:
       - ./mems_api/.env
     environment:
       - LOCAL=False
-      - DEBUG=True
+      - DEBUG=False
       - API_HOST=${MEMS_API_HOST}
       - API_PORT=${MEMS_API_PORT}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -88,7 +88,7 @@ services:
       - S3_SAVER_HOST=${S3_SAVER_HOST}
       - S3_SAVER_PORT=${S3_SAVER_PORT}
     volumes:
-      - static:/static/mem_images
+      - static:/opt/mems/static/
     depends_on:
       postgres:
         condition: service_healthy
