@@ -8,4 +8,4 @@ class S3Saver(EnvSettings):
 
     @property
     def url(self) -> str:
-        return f"http://{self.host}:{self.port}/api/v1/s3/image"
+        return f"http://{self.host}:{self.port}/s3/v1/image"

@@ -45,7 +45,7 @@ class ImageSaver:
         image_key = ""
 
         async with self.__http_client as client:
-            response = await client.put(
+            response = await client.post(
                 url=self.__s3_saver.url, data={"file_url": file_url}
             )
         data = response.json()
