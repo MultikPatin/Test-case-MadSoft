@@ -1,72 +1,81 @@
 import os
-import uuid
-from http import HTTPStatus
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import HTTPException
-from httpx import AsyncClient
 
 from functools import lru_cache
 
 from src.configs.config import settings, Settings
 from src.schemas.api.v1.image import ResponsePutImage
 
+from aiobotocore.session import get_session, AioSession
+
 
 class ImageService:
-    _http_client: AsyncClient
+    __session: AioSession
 
-    def __init__(self, static_settings: Settings, http_client: AsyncClient):
-        self.__static = static_settings.static
-        self.__http_client = http_client
+    def __init__(self, settings: Settings, session: AioSession):
+        self.__static = settings.static
         self.__file_dir_path = os.path.join(
             self.__static.main_dir, self.__static.mem_images_dir
         )
         p = Path(self.__file_dir_path)
         p.mkdir(parents=True, exist_ok=True)
 
-    async def remove_from_disc(self, file_name: str) -> None:
-        file_extension = None
-        if file.content_type is not None:
-            _, file_extension = file.content_type.split("/")
+        self.config = {
+            "aws_access_key_id": settings.s3.access_key,
+            "aws_secret_access_key": settings.s3.secret_key,
+            "endpoint_url": settings.s3.endpoint_url,
+        }
+        self.bucket_name = settings.s3.bucket_name
+        self.__session = session
 
-        file.filename = f"{uuid.uuid4()}.{file_extension}"
-        file_path = str(os.path.join(self.__file_dir_path, file.filename))
+    @asynccontextmanager
+    async def get_client(self):
+        async with self.__session.create_client("s3", **self.config) as client:
+            yield client
 
-        contents = await file.read()
-        with open(file_path, "wb") as f:
-            f.write(contents)
-
-        return f"{self.__file_dir_url}{file.filename}"
+    @staticmethod
+    async def _remove_from_disc(file_path: str) -> None:
+        p = Path(file_path)
+        p.unlink()
 
     async def put(self, file_name: str) -> ResponsePutImage:
-        image_url = ""
-        image_key = ""
+        file_path = os.path.join(self.__file_dir_path, file_name)
+        try:
+            async with self.get_client() as client:
+                with open(file_path, "rb") as file:
+                    await client.put_object(
+                        Bucket=self.bucket_name,
+                        Key=file_name,
+                        Body=file,
+                    )
+        except Exception:
+            pass
 
-        async with self.__http_client as client:
-            response = await client.post(
-                url=self.__s3_saver.url, data={"file_url": file_url}
-            )
-        data = response.json()
-        if data:
-            image_url, image_key = data.get("image"), data.get("image_key")
+        endpoint_url = self.config["endpoint_url"]
+        image_url = f"{endpoint_url}/{self.bucket_name}/{file_name}"
 
-        return image_url, image_key
+        await self._remove_from_disc(file_path)
+
+        return ResponsePutImage(
+            image_url=image_url,
+            image_key=file_name,
+        )
 
     async def remove(self, file_key: str) -> str:
-        url = self.__s3_saver.url + f"/{file_key}"
+        try:
+            async with self.get_client() as client:
+                await client.delete_object(
+                    Bucket=self.bucket_name,
+                    Key=file_key,
+                )
+        except Exception:
+            pass
 
-        async with self.__http_client as client:
-            response = await client.delete(url=url)
-
-        if response.status_code == 200:
-            return file_key
-        else:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                detail=f"error deleting a file from s3 storage. status_code={response.status_code}",
-            )
+        return file_key
 
 
 @lru_cache
 def get_image_service() -> ImageService:
-    return ImageService(settings, AsyncClient())
+    return ImageService(settings, get_session())

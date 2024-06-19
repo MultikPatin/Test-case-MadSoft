@@ -27,8 +27,16 @@ class StaticSettings(EnvSettings):
     mem_images_dir: str = Field(..., alias="STATIC_MEM_IMAGES_DIR")
 
 
+class S3Settings(EnvSettings):
+    access_key: str = Field(..., alias="S3_ACCESS_KEY")
+    secret_key: str = Field(..., alias="S3_SECRET_KEY")
+    endpoint_url: str = Field(..., alias="S3_ENDPOINT_URL")
+    bucket_name: str = Field(..., alias="S3_BUCKET_NAME")
+
+
 class Settings(BaseSettings):
     app: AppSettings = AppSettings()
+    s3: S3Settings = S3Settings()
     static: StaticSettings = StaticSettings()
     redis: RedisSettings = RedisSettings()
     sentry: SentrySettings = SentrySettings()
