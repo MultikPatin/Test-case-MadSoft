@@ -31,7 +31,7 @@ app = FastAPI(
 
 app.include_router(
     image.router,
-    prefix="/s3/v1/",
+    prefix="/api/v1/image",
     tags=["image"],
 )
 

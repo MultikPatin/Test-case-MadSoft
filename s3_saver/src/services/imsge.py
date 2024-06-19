@@ -1,32 +1,30 @@
 import os
 import uuid
+from http import HTTPStatus
 from pathlib import Path
 
-from fastapi import UploadFile
+from fastapi import HTTPException
 from httpx import AsyncClient
 
 from functools import lru_cache
 
 from src.configs.config import settings, Settings
+from src.schemas.api.v1.image import ResponsePutImage
 
 
-class ImageSaver:
+class ImageService:
     _http_client: AsyncClient
 
     def __init__(self, static_settings: Settings, http_client: AsyncClient):
         self.__static = static_settings.static
-        self.__s3_saver = static_settings.s3_sever
         self.__http_client = http_client
-        self.__file_dir_url = (
-            f"{self.__static.main_dir}/{self.__static.mem_images_dir}/"
-        )
         self.__file_dir_path = os.path.join(
             self.__static.main_dir, self.__static.mem_images_dir
         )
         p = Path(self.__file_dir_path)
         p.mkdir(parents=True, exist_ok=True)
 
-    async def save_to_disc(self, file: UploadFile) -> str:
+    async def remove_from_disc(self, file_name: str) -> None:
         file_extension = None
         if file.content_type is not None:
             _, file_extension = file.content_type.split("/")
@@ -40,7 +38,7 @@ class ImageSaver:
 
         return f"{self.__file_dir_url}{file.filename}"
 
-    async def put_to_s3(self, file_url: str) -> tuple[str, str]:
+    async def put(self, file_name: str) -> ResponsePutImage:
         image_url = ""
         image_key = ""
 
@@ -54,15 +52,21 @@ class ImageSaver:
 
         return image_url, image_key
 
-    async def del_from_s3(self, file_key: str) -> int:
+    async def remove(self, file_key: str) -> str:
         url = self.__s3_saver.url + f"/{file_key}"
 
         async with self.__http_client as client:
             response = await client.delete(url=url)
 
-        return response.status_code
+        if response.status_code == 200:
+            return file_key
+        else:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                detail=f"error deleting a file from s3 storage. status_code={response.status_code}",
+            )
 
 
 @lru_cache
-def get_image_saver_service() -> ImageSaver:
-    return ImageSaver(settings, AsyncClient())
+def get_image_service() -> ImageService:
+    return ImageService(settings, AsyncClient())

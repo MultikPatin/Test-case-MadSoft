@@ -41,12 +41,13 @@ class ImageSaver:
         return f"{self.__file_dir_url}{file.filename}"
 
     async def put_to_s3(self, file_url: str) -> tuple[str, str]:
+        file_name = file_url.split("/")[-1]
         image_url = ""
         image_key = ""
 
         async with self.__http_client as client:
             response = await client.put(
-                url=self.__s3_saver.url, data={"file_url": file_url}
+                url=self.__s3_saver.url_image, data={"file_name": file_name}
             )
         data = response.json()
         if data:
@@ -55,7 +56,7 @@ class ImageSaver:
         return image_url, image_key
 
     async def del_from_s3(self, file_key: str) -> int:
-        url = self.__s3_saver.url + f"/{file_key}"
+        url = self.__s3_saver.url_image + f"/{file_key}"
 
         async with self.__http_client as client:
             response = await client.delete(url=url)

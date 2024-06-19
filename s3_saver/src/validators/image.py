@@ -1,36 +1,21 @@
 from http import HTTPStatus
-from typing import Annotated
+import os
 
-from fastapi import HTTPException, UploadFile, File
-
-VALID_CONTENT_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/bmp",
-]
+from fastapi import HTTPException
+from src.configs.config import settings
 
 
-async def is_valid_image_size(file) -> None:
-    file.file.seek(0, 2)
-    file_size = file.file.tell()
-    print(file_size)
-    await file.seek(0)
+async def is_exists(file_name: str) -> str:
+    file_dir_path = os.path.join(
+        settings.static.main_dir, settings.static.mem_images_dir
+    )
+    file_path = os.path.join(str(file_dir_path), file_name)
 
-    if file_size > 1024 * 1024:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="File too large")
-
-
-async def is_valid_image_type(file) -> None:
-    content_type = file.content_type
-    if content_type not in VALID_CONTENT_TYPES:
+    try:
+        with open(file_path, "r") as f:
+            f.read()
+    except Exception:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Invalid file type"
+            status_code=HTTPStatus.NOT_FOUND, detail="The object was not found"
         )
-
-
-image_annotation = Annotated[
-    UploadFile,
-    File(
-        description="The image file for the mem",
-    ),
-]
+    return file_name

@@ -99,6 +99,32 @@ services:
     networks:
       - services
 
+  s3_saver:
+    container_name: ${S3_SAVER_HOST}
+    image: s3_saver:latest
+    build:
+      context: ./s3_saver/
+      dockerfile: Dockerfile
+    env_file:
+      - ./s3_saver/.env
+    environment:
+      - LOCAL=False
+      - DEBUG=False
+      - API_HOST=${S3_SAVER_HOST}
+      - API_PORT=${S3_SAVER_PORT}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - SENTRY_DSN=${SENTRY_DSN}
+    volumes:
+      - static:/opt/s3_saver/static/
+    depends_on:
+      redis:
+        condition: service_healthy
+    expose:
+      - ${S3_SAVER_PORT}
+    networks:
+      - services
+
   nginx:
     image: nginx:${NGINX_VERSION}
     container_name: gateway

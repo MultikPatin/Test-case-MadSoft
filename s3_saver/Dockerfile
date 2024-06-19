@@ -20,12 +20,12 @@ RUN pip install --upgrade pip && \
 
 COPY ./pyproject.toml ./poetry.lock* /tmp/
 
-RUN poetry export -f requirements.txt --output requirements.txt --without-hashes --extras api
+RUN poetry export -f requirements.txt --output requirements.txt --without-hashes
 
 
 FROM python:3.11-slim-buster
 
-WORKDIR /opt/mems
+WORKDIR /opt/s3_saver
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends netcat && \
