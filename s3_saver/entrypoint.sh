@@ -1,6 +1,9 @@
-export PYTHONPATH=$SRC_PATH
-rm poetry.lock
-rm pyproject.toml
-cd "$APP_DIR" || exit
-rm Dockerfile
-gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind "$AUTH_API_HOST":"$AUTH_API_PORT"
+#!/usr/bin/env bash
+
+echo "Waiting Redis start"
+while ! nc -z "${REDIS_HOST}" "${REDIS_PORT}"; do
+  sleep 1
+done
+echo "Redis started"
+
+gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind "$API_HOST":"$API_PORT"

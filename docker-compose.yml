@@ -1,88 +1,146 @@
 services:
 
-    postgres:
-      image: postgres:${POSTGRES_VERSION}
-      container_name: ${POSTGRES_HOST}
-      restart: always
-      environment:
-        - POSTGRES_DB=${POSTGRES_DB}
-        - POSTGRES_USER=${POSTGRES_USER}
-        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-        - POSTGRES_HOST=${POSTGRES_HOST}
-        - POSTGRES_PORT=${POSTGRES_PORT}
-      volumes:
-        - postgres_data:/var/lib/postgresql/data/
-      healthcheck:
-        test: [ "CMD-SHELL", "pg_isready -h ${POSTGRES_HOST}" ]
-        interval: 10s
-        timeout: 3s
-        retries: 3
-        start_period: 5s
-      ports:
-        - "${POSTGRES_PORT_LOCAL}:${POSTGRES_PORT}"
-      networks:
-        - services
+  postgres:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: ${POSTGRES_HOST}
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -h ${POSTGRES_HOST}" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    ports:
+      - ${POSTGRES_PORT_LOCAL}:${POSTGRES_PORT}
+    networks:
+      - services
 
-    redis:
-      image: redis:${REDIS_VERSION}
-      container_name: ${REDIS_HOST}
-      restart: always
-      environment:
-        - REDIS_HOST=${REDIS_HOST}
-        - REDIS_PORT=${REDIS_PORT}
-      healthcheck:
-        test: [ "CMD-SHELL", "redis-cli", "ping" ]
-        interval: 1s
-        timeout: 3s
-        retries: 3
-        start_period: 5s
-      ports:
-        - "${REDIS_PORT_LOCAL}:${REDIS_PORT}"
-      networks:
-        - services
+  redis:
+    image: redis:${REDIS_VERSION}
+    container_name: ${REDIS_HOST}
+    restart: always
+    environment:
+      - LOCAL=False
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    ports:
+      - ${REDIS_PORT_LOCAL}:${REDIS_PORT}
+    networks:
+      - services
 
-    migrations:
-      build:
-        dockerfile: ./migrations/Dockerfile
-      container_name: migrations
-      environment:
-        - LOCAL=False
-        - DEBUG=False
-        - POSTGRES_DB=${POSTGRES_DB}
-        - POSTGRES_USER=${POSTGRES_USER}
-        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-        - POSTGRES_HOST=${POSTGRES_HOST}
-        - POSTGRES_PORT=${POSTGRES_PORT}
-        - POSTGRES_HOST_LOCAL=${POSTGRES_HOST_LOCAL}
-        - POSTGRES_PORT_LOCAL=${POSTGRES_PORT_LOCAL}
-      depends_on:
-        postgres:
-          condition: service_healthy
-      networks:
-        - services
+  migrations:
+    build:
+      context: ./mems_api/
+      dockerfile: ./migrations/Dockerfile
+    container_name: migrations
+    image: mems_api_migrations:latest
+    environment:
+      - LOCAL=False
+      - DEBUG=True
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST_LOCAL=${POSTGRES_HOST_LOCAL}
+      - POSTGRES_PORT_LOCAL=${POSTGRES_PORT_LOCAL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - services
 
-    mems_api:
-      container_name: mems_api
-      image: mems_api:latest
-      build:
-        context: ./etl_analytics/
-        dockerfile: Dockerfile
-      env_file:
-        - ./mems_api/.env
-      environment:
-        - POSTGRES_DB=${POSTGRES_DB}
-        - POSTGRES_USER=${POSTGRES_USER}
-        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-        - POSTGRES_HOST=${POSTGRES_HOST}
-        - POSTGRES_PORT=${POSTGRES_PORT}
-        - REDIS_HOST=${REDIS_HOST}
-        - REDIS_PORT=${REDIS_PORT}
-        - SENTRY_DSN=${SENTRY_DSN}
-      depends_on:
-        kafka-init:
-          condition: service_started
-      networks:
-        - kafka_network
+  mems_api:
+    container_name: ${MEMS_API_HOST}
+    image: mems_api:latest
+    build:
+      context: ./mems_api/
+      dockerfile: Dockerfile
+    env_file:
+      - ./mems_api/.env
+    environment:
+      - LOCAL=False
+      - DEBUG=False
+      - API_HOST=${MEMS_API_HOST}
+      - API_PORT=${MEMS_API_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - S3_SAVER_HOST=${S3_SAVER_HOST}
+      - S3_SAVER_PORT=${S3_SAVER_PORT}
+    volumes:
+      - static:/opt/mems/static/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - ${MEMS_API_PORT_LOCAL}:${MEMS_API_PORT}
+    networks:
+      - services
+
+  s3_saver:
+    container_name: ${S3_SAVER_HOST}
+    image: s3_saver:latest
+    build:
+      context: ./s3_saver/
+      dockerfile: Dockerfile
+    env_file:
+      - ./s3_saver/.env
+    environment:
+      - LOCAL=False
+      - DEBUG=False
+      - API_HOST=${S3_SAVER_HOST}
+      - API_PORT=${S3_SAVER_PORT}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - SENTRY_DSN=${SENTRY_DSN}
+    volumes:
+      - static:/opt/s3_saver/static/
+    depends_on:
+      redis:
+        condition: service_healthy
+    expose:
+      - ${S3_SAVER_PORT}
+    networks:
+      - services
+
+  nginx:
+    image: nginx:${NGINX_VERSION}
+    container_name: gateway
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/configs:/etc/nginx/conf.d:ro
+      - static:/staticfiles/
+    restart: unless-stopped
+    depends_on:
+      mems_api:
+        condition: service_started
+    ports:
+      - "443:443"
+      - "80:80"
+    networks:
+      - services
 
 volumes:
   postgres_data:

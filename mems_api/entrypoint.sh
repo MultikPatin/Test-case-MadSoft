@@ -6,4 +6,10 @@ while ! nc -z "${POSTGRES_HOST}" "${POSTGRES_PORT}"; do
 done
 echo "Postgres started"
 
-gunicorn --worker-class gevent --workers 4 --bind "0.0.0.0:8000" --log-level debug main:app
+echo "Waiting Redis start"
+while ! nc -z "${REDIS_HOST}" "${REDIS_PORT}"; do
+  sleep 1
+done
+echo "Redis started"
+
+gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind "$API_HOST":"$API_PORT"

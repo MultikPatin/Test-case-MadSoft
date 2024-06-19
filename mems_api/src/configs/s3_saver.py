@@ -7,5 +7,5 @@ class S3Saver(EnvSettings):
     port: int = Field(8080, alias="S3_SAVER_PORT")
 
     @property
-    def url(self) -> str:
-        return f"http://{self.host}:{self.port}/api/v1/s3/image"
+    def url_image(self) -> str:
+        return f"http://{self.host}:{self.port}/api/v1/image"
