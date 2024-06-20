@@ -1,0 +1,70 @@
+services:
+
+    postgres:
+      image: postgres:${POSTGRES_VERSION}
+      container_name: postgres
+      restart: always
+      environment:
+        - POSTGRES_DB=db_mems
+        - POSTGRES_USER=app
+        - POSTGRES_PASSWORD=123qwe
+        - POSTGRES_HOST=postgres
+        - POSTGRES_PORT=5432
+      volumes:
+        - postgres_data:/var/lib/postgresql/data/
+      healthcheck:
+        test: [ "CMD-SHELL", "pg_isready -h postgres" ]
+        interval: 10s
+        timeout: 3s
+        retries: 3
+        start_period: 5s
+      ports:
+        - "5432:5432"
+      networks:
+        - services
+
+    redis:
+      image: redis:${REDIS_VERSION}
+      container_name: redis
+      restart: always
+      environment:
+        - REDIS_HOST=redis
+        - REDIS_PORT=6379
+      healthcheck:
+        test: [ "CMD-SHELL", "redis-cli", "ping" ]
+        interval: 1s
+        timeout: 3s
+        retries: 3
+        start_period: 5s
+      ports:
+        - "6379:6379"
+      networks:
+        - services
+
+    migrations:
+      build:
+        dockerfile: ./migrations/Dockerfile
+      container_name: migrations
+      environment:
+        - LOCAL=False
+        - DEBUG=False
+        - POSTGRES_DB=db_mems
+        - POSTGRES_USER=app
+        - POSTGRES_PASSWORD=123qwe
+        - POSTGRES_HOST=postgres
+        - POSTGRES_PORT=5432
+        - POSTGRES_HOST_LOCAL=localhost
+        - POSTGRES_PORT_LOCAL=5432
+      depends_on:
+        postgres:
+          condition: service_healthy
+      networks:
+        - services
+
+volumes:
+  postgres_data:
+  static:
+
+networks:
+  services:
+    driver: bridge

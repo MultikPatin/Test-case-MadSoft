@@ -1,0 +1,23 @@
+services:
+
+    redis:
+      image: redis:${REDIS_VERSION}
+      container_name: redis
+      restart: always
+      environment:
+        - REDIS_HOST=redis
+        - REDIS_PORT=6379
+      healthcheck:
+        test: [ "CMD-SHELL", "redis-cli", "ping" ]
+        interval: 1s
+        timeout: 3s
+        retries: 3
+        start_period: 5s
+      ports:
+        - "6379:6379"
+      networks:
+        - services
+
+networks:
+  services:
+    driver: bridge
